@@ -78,12 +78,11 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'ordering_db',
         'USER': 'django_user',
-        'PASSWORD': '',
-        'HOST': 'localhost',
+        'PASSWORD': '',  
+        'HOST': '127.0.0.1',   
         'PORT': '3306',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
