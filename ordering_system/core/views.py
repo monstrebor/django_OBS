@@ -1,3 +1,107 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from .models import Product, Order, OrderItem, Bill
+from .forms import RegisterForm
+from django.contrib.auth.forms import AuthenticationForm
+import io
 
-# Create your views here.
+def register(request):
+    if request.method == 'POST':
+        form = RegisterForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('home')
+    else:
+        form = RegisterForm()
+    return render(request, 'core/register.html', {'form': form})
+
+def login(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            return redirect('home')
+    else:
+        form = AuthenticationForm()
+    return render(request, 'registration/login.html', {'form': form})
+
+
+def home(request):
+    products = Product.objects.all()
+    return render(request, 'core/home.html', {'products': products})
+
+@login_required
+def add_to_cart(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    cart = request.session.get('cart', {})
+    cart[str(product_id)] = cart.get(str(product_id), 0) + 1
+    request.session['cart'] = cart
+    return redirect('cart')
+
+@login_required
+def cart(request):
+    cart = request.session.get('cart',{})
+    items = []
+    total = 0
+    for pid, qty in cart.items():
+        product = get_object_or_404(Product, id=pid)
+        subtotal = product.price * qty
+        total += subtotal
+        items.append({'product': product, 'quantity': qty, 'subtotal': subtotal})
+    return render(request, 'core/cart.html', {'items': items, 'total': total})
+    
+@login_required
+def checkout(request):
+    cart = request.session.get('cart', {})
+    if not cart:
+        return redirect('home')
+    
+    order = Order.objects.created(user=request.user)
+    subtotal = 0
+    for pid, qty in cart.items():
+        product = get_object_or_404(Product, id=pid)
+        price  = product.price
+        OrderItem.objects.create(order=order, product=product, quantity=qty, price=price)
+        subtotal += price * qty
+        product.stock -= qty
+        product.save()
+        
+    tax = subtotal * 0.10
+    total = subtotal + tax
+    order.total = total
+    order.save()
+    
+    bill = Bill.objects.create(order=order, subtotal=subtotal, tax=tax, total=total)
+    bill.pdf = generate_pdf_bill(bill)
+    bill.save()
+    
+    del request.session['cart']
+    return redirect('invoice', bill_id=bill.id)
+
+def generate_pdf_bill(bill):
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
+    p.drawString(100, 750, f"Invoice for Order {bill.order.id}")
+    p.drawString(100, 730, f"User: {bill.order.user.username}")
+    p.drawString(100, 710, f"Subtotal: ${bill.subtotal}")
+    p.drawString(100, 690, f"Tax: ${bill.tax}")
+    p.drawString(100, 670, f"Total: ${bill.total}")
+    
+    p.save()
+    buffer.seek(0)
+    return buffer
+
+@login_required
+def invoice(request, bill_id):
+    bill = get_object_or_404(Bill, id=bill_id, order__user=request.user)
+    response = HttpResponse(bill.pdf.read(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="invoice_{bill_id}.pdf"'
+    return response
+
+
