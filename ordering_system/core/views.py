@@ -1,12 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, authenticate
-from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
+from django.contrib import messages
+from django.contrib.auth import login as auth_login, logout, authenticate
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.decorators import login_required
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from .models import Product, Order, OrderItem, Bill
 from .forms import RegisterForm
-from django.contrib.auth.forms import AuthenticationForm
 import io
 
 def register(request):
@@ -14,23 +15,39 @@ def register(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)
+            auth_login(request, user)
+            messages.success(request, f"Welcome {user.username}, your account has been created successfully! 🎉")
             return redirect('home')
     else:
         form = RegisterForm()
     return render(request, 'core/register.html', {'form': form})
 
 def login(request):
-    if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            login(request, user)
-            return redirect('home')
-    else:
-        form = AuthenticationForm()
-    return render(request, 'registration/login.html', {'form': form})
+    return render(request, 'core/login.html')
 
+from django.contrib.auth import authenticate, login as auth_login
+
+def user_login(request):
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '').strip()
+        if not username or not password:
+            messages.error(request, "Both username and password are required.")
+        else:
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                auth_login(request, user)
+                messages.success(request, f"Welcome back, {user.username}! 🎉 login successfully!!")
+                return redirect('home')
+            else:
+                messages.error(request, "Invalid username or password.")
+    return render(request, 'core/login.html')
+
+@login_required
+def user_logout(request):
+    logout(request)
+    messages.success(request, "You have been logged out successfully. 👋")
+    return redirect("home")
 
 def home(request):
     products = Product.objects.all()
