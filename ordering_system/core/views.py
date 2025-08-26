@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from .models import Product, Order, OrderItem, Bill
-from .forms import RegisterForm
+from .forms import RegisterForm, ProductForm
 import io
 
 def register(request):
@@ -121,4 +121,44 @@ def invoice(request, bill_id):
     response['Content-Disposition'] = f'attachment; filename="invoice_{bill_id}.pdf"'
     return response
 
+
+# Product Crud
+def product_list(request):
+    products = Product.objects.all()
+    return render(request, 'core/product_list.html', {'products': products})
+
+@login_required
+def product_create(request):
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES)  # include request.FILES
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Product created successfully! ✅")
+            return redirect('product-list')
+    else:
+        form = ProductForm()
+    return render(request, 'core/product_form.html', {'form': form, 'title': 'Add Product'})
+
+
+@login_required
+def product_update(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES, instance=product)  # include request.FILES
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Product updated successfully! ✏️")
+            return redirect('product-list')
+    else:
+        form = ProductForm(instance=product)
+    return render(request, 'core/product_form.html', {'form': form, 'title': 'Edit Product'})
+
+@login_required
+def product_delete(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    if request.method == 'POST':
+        product.delete()
+        messages.success(request, "Product deleted successfully! 🗑️")
+        return redirect('product-list')
+    return render(request, 'core/product_confirm_delete.html', {'product': product})
 

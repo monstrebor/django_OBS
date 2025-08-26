@@ -1,0 +1,30 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Products</h2>
+    <a href="{% url 'product-create' %}" class="btn btn-success mb-3">+ Add Product</a>
+    <table class="table table-bordered">
+        <tr>
+            <th>Image</th><th>Name</th><th>Price</th><th>Stock</th><th>Actions</th>
+        </tr>
+        {% for product in products %}
+        <tr>
+            <td>
+                {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}" width="60">
+                {% else %}
+                    <span class="text-muted">No Image</span>
+                {% endif %}
+            </td>
+            <td>{{ product.name }}</td>
+            <td>${{ product.price }}</td>
+            <td>{{ product.stock }}</td>
+            <td>
+                <a href="{% url 'product-update' product.id %}" class="btn btn-warning btn-sm">Edit</a>
+                <a href="{% url 'product-delete' product.id %}" class="btn btn-danger btn-sm">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}
