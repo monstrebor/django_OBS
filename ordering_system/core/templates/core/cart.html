@@ -1,24 +1,56 @@
 {% extends 'core/base.html' %}
 {% block content %}
-<h1>Your Cart</h1>
-<table class="table">
-    <thead>
-        <tr>
-            <th>Product</th>
-            <th>Quantity</th>
-            <th>Subtotal</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for item in items %}
-            <tr>
-                <td>{{ item.product.name }}</td>
-                <td>{{ item.quantity }}</td>
-                <td>{{ item.subtotal }}</td>
-            </tr>
-        {% endfor %}
-    </tbody>
-</table>
-<h4>Total: ${{ total }}</h4>
-<a href="{% url 'checkout' %}" class="btn btn-success">checkout</a>
+<div class="container mt-4">
+    <h1 class="mb-4">🛒 Your Cart</h1>
+
+    {% if cart_empty %}
+        <div class="alert alert-warning text-center">
+            Your cart is empty. <a href="{% url 'home' %}">Continue shopping</a>.
+        </div>
+    {% else %}
+        <table class="table table-striped table-bordered shadow-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th>Product</th>
+                    <th width="200">Quantity</th>
+                    <th width="120">Subtotal</th>
+                    <th width="80">Remove</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>
+                        {% if item.product.image %}
+                            <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" width="60" class="rounded me-2">
+                        {% endif %}
+                        {{ item.product.name }}
+                    </td>
+                    <td>
+                        <form method="post" action="{% url 'update_cart' item.product.id %}" class="d-flex align-items-center">
+                            {% csrf_token %}
+                            <button type="submit" name="action" value="decrease" class="btn btn-outline-secondary btn-sm me-1">−</button>
+                            <input type="text" name="quantity" value="{{ item.quantity }}" readonly class="form-control text-center" style="width:60px;">
+                            <button type="submit" name="action" value="increase" class="btn btn-outline-secondary btn-sm ms-1">+</button>
+                        </form>
+                    </td>
+                    <td>${{ item.subtotal }}</td>
+                    <td>
+                        <form method="post" action="{% url 'remove_from_cart' item.product.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm">🗑</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <h4>Total: <strong>${{ total }}</strong></h4>
+            <a href="{% url 'checkout' %}" class="btn btn-success btn-lg">✅ Checkout</a>
+        </div>
+    {% endif %}
+</div>
 {% endblock %}
+    

@@ -57,21 +57,56 @@ def home(request):
 def add_to_cart(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     cart = request.session.get('cart', {})
+    # store quantity
     cart[str(product_id)] = cart.get(str(product_id), 0) + 1
     request.session['cart'] = cart
+    request.session.modified = True  # important: mark session as changed
+    messages.success(request, f"{product.name} has been added to your cart! 🛒")
     return redirect('cart')
 
 @login_required
+def update_cart(request, product_id):
+    cart = request.session.get("cart", {})
+    product_id = str(product_id)
+    if product_id in cart:
+        action = request.POST.get("action")
+        if action == "increase":
+            cart[product_id] += 1
+        elif action == "decrease":
+            cart[product_id] -= 1
+            if cart[product_id] <= 0:
+                del cart[product_id]
+        request.session["cart"] = cart
+    return redirect("cart")
+
+@login_required
 def cart(request):
-    cart = request.session.get('cart',{})
+    cart = request.session.get('cart', {})
     items = []
     total = 0
     for pid, qty in cart.items():
         product = get_object_or_404(Product, id=pid)
         subtotal = product.price * qty
         total += subtotal
-        items.append({'product': product, 'quantity': qty, 'subtotal': subtotal})
-    return render(request, 'core/cart.html', {'items': items, 'total': total})
+        items.append({
+            'product': product,
+            'quantity': qty,
+            'subtotal': subtotal
+        })
+    return render(request, 'core/cart.html', {
+        'items': items,
+        'total': total,
+        'cart_empty': len(items) == 0
+    })
+    
+@login_required
+def remove_from_cart(request, product_id):
+    cart = request.session.get("cart", {})
+    product_id = str(product_id)
+    if product_id in cart:
+        del cart[product_id]
+        request.session["cart"] = cart
+    return redirect("cart")
     
 @login_required
 def checkout(request):
@@ -144,7 +179,7 @@ def product_create(request):
 def product_update(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     if request.method == 'POST':
-        form = ProductForm(request.POST, request.FILES, instance=product)  # include request.FILES
+        form = ProductForm(request.POST, request.FILES, instance=product)  
         if form.is_valid():
             form.save()
             messages.success(request, "Product updated successfully! ✏️")
@@ -161,4 +196,11 @@ def product_delete(request, product_id):
         messages.success(request, "Product deleted successfully! 🗑️")
         return redirect('product-list')
     return render(request, 'core/product_confirm_delete.html', {'product': product})
+
+# user side
+@login_required
+def view_product(request):
+    products = Product.objects.all()
+    return render(request, "core/products/view_product.html", {"products": products})
+
 
