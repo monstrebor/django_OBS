@@ -24,6 +24,10 @@ urlpatterns = [
     path('cart/', views.cart, name='cart'),
     path('checkout/', views.checkout, name='checkout'),
     path('invoice/<int:bill_id>/', views.invoice, name='invoice'),
+    
+    path("place_order/", views.place_order, name="place_order"),
+    path("order/<int:order_id>/", views.view_order, name="view_order"),
+    path("orders/", views.order_history, name="order_history"),
 ]
 
 if settings.DEBUG:

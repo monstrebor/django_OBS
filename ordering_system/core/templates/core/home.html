@@ -3,21 +3,24 @@
 <h1>Products</h1>
 <div class="row">
     {% for product in products %}
-        <div class="col-md-4">
-            <div class="card mb-4">
-                {% if product.image %}
-                    <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            {% if product.image %}
+            <div class="d-flex align-items-center justify-content-center" style="height: 250px;">
+                <img src="{{ product.image.url }}" class="card-img-top"
+                    style="width: 200px; height: 200px; margin-top: 30px; object-fit: contain;" alt="{{ product.name }}">
+            </div>
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ product.name }}</h5>
+                <p class="card-text">{{ product.description }}</p>
+                <p class="card-text">{{ product.price }}</p>
+                {% if user.is_authenticated %}
+                <a href="{% url 'add_to_cart' product.id %}" class="btn btn-primary">Add to cart</a>
                 {% endif %}
-                <div class="card-body">
-                    <h5 class="card-title">{{ product.name }}</h5>
-                    <p class="card-text">{{ product.description }}</p>
-                    <p class="card-text">{{ product.price }}</p>
-                    {% if user.is_authenticated %}
-                        <a href="{% url 'add_to_cart' product.id %}" class="btn btn-primary">Add to cart</a>
-                    {% endif %}
-                </div>
             </div>
         </div>
+    </div>
     {% endfor %}
 </div>
 {% endblock %}

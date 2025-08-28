@@ -203,4 +203,40 @@ def view_product(request):
     products = Product.objects.all()
     return render(request, "core/products/view_product.html", {"products": products})
 
+@login_required
+def place_order(request):
+    if request.method == "POST":
+        order = Order.objects.create(user=request.user, status="Pending", total=0)
+        total = 0
+        for key, value in request.POST.items():
+            if key.startswith("quantity_"):
+                product_id = key.split("_")[1]
+                quantity = int(value)
+                if quantity > 0:
+                    product = get_object_or_404(Product, id=product_id)
+                    item_price = product.price * quantity
+                    OrderItem.objects.create(
+                        order=order,
+                        product=product,
+                        quantity=quantity,
+                        price=item_price
+                    )
+                    total += item_price
+        order.total = total
+        order.save()
+        return redirect("view_order", order_id=order.id)
+    return redirect("view_product")
+
+@login_required
+def view_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    return render(request, "core/view_order.html", {"order": order})
+
+@login_required
+def order_history(request):
+    orders = Order.objects.filter(user=request.user).order_by("-created_at")
+    return render(request, "core/order_history.html", {"orders": orders})
+
+
+
 

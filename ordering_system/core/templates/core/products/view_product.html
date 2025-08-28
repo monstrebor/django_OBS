@@ -3,37 +3,70 @@
 <div class="container mt-4">
     <h1 class="mb-4">📦 Available Products</h1>
 
-    <div class="row">
-        {% for product in products %}
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-lg rounded-3">
-                {% if product.image %}
-                    <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
-                {% else %}
-                    <img src="https://via.placeholder.com/300x200.png?text=No+Image" class="card-img-top" alt="No image">
-                {% endif %}
-
-                <div class="card-body">
-                    <h5 class="card-title">{{ product.name }}</h5>
-                    <p class="card-text text-muted">{{ product.description|truncatechars:80 }}</p>
-                    <p><strong>Price: ${{ product.price }}</strong></p>
-                    <p>Stock: {{ product.stock }}</p>
-
-                    {% if product.stock > 0 %}
-                        <form method="post" action="{% url 'add_to_cart' product.id %}">
-                            {% csrf_token %}
-                            <div class="input-group mb-2">
-                                <input type="number" name="quantity" value="1" min="1" max="{{ product.stock }}" class="form-control">
-                                <button type="submit" class="btn btn-primary">🛒 Add to Cart</button>
-                            </div>
-                        </form>
+    <!-- DIRECT ORDER FORM -->
+    <form method="post" action="{% url 'place_order' %}">
+        {% csrf_token %}
+        <div class="row">
+            {% for product in products %}
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-lg rounded-3">
+                    {% if product.image %}
+                    <div class="d-flex align-items-center justify-content-center" style="height: 200px;">
+                        <img src="{{ product.image.url }}" class="card-img-top"
+                            style="width: 200px; height: 200px; object-fit: contain;" alt="{{ product.name }}">
+                    </div>
                     {% else %}
-                        <button class="btn btn-secondary" disabled>Out of Stock</button>
+                    <img src="https://via.placeholder.com/200x200.png?text=No+Image" class="card-img-top"
+                        alt="No image">
                     {% endif %}
+
+                    <div class="card-body text-center">
+                        <h5 class="card-title">{{ product.name }}</h5>
+                        <p class="card-text text-muted">{{ product.description|truncatechars:80 }}</p>
+                        <p><strong>Price: ${{ product.price }}</strong></p>
+                        <p>Stock: {{ product.stock }}</p>
+
+                        {% if product.stock > 0 %}
+                        <div class="input-group justify-content-center mb-2" style="max-width: 160px;">
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                onclick="this.parentNode.querySelector('input').stepDown()">−</button>
+                            <input type="number" name="quantity_{{ product.id }}" value="0" min="0"
+                                max="{{ product.stock }}" class="form-control text-center" style="max-width: 70px;">
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                onclick="this.parentNode.querySelector('input').stepUp()">+</button>
+                        </div>
+
+                        <button type="button" class="btn btn-primary w-100 mt-2"
+                            onclick="addToCart({{ product.id }})">🛒 Add to Cart</button>
+
+                        {% else %}
+                        <button class="btn btn-secondary w-100" disabled>Out of Stock</button>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
+
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-success btn-lg">✅ Place Order</button>
+        </div>
+    </form>
+
+    <div class="text-center mt-3">
+        <a href="{% url 'cart' %}" class="btn btn-warning btn-lg">🛍 View Cart</a>
     </div>
 </div>
+
+<form id="cartForm" method="post" style="display:none;">
+    {% csrf_token %}
+</form>
+
+<script>
+    function addToCart(productId) {
+        const form = document.getElementById('cartForm');
+        form.action = `/add-to-cart/${productId}/`;  // match your url pattern
+        form.submit();
+    }
+</script>
 {% endblock %}

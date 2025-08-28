@@ -1,0 +1,39 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">📜 My Order History</h1>
+
+    {% if orders %}
+        <table class="table table-bordered shadow-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th>Order ID</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                    <th>View</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>#{{ order.id }}</td>
+                    <td>{{ order.created_at }}</td>
+                    <td>{{ order.status }}</td>
+                    <td>${{ order.total }}</td>
+                    <td>
+                        <a href="{% url 'view_order' order.id %}" class="btn btn-sm btn-outline-info">
+                            🔍 View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="alert alert-info text-center">
+            You have no orders yet.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
